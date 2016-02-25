@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# First we need to disable the login:
+sed -e '/ttyATH0/ s/^#*/#/' -i /etc/inittab
+killall -HUP init
+
+# We need to save the current state of the UART connection
+UART_SET=`cat /sys/class/gpio/gpio24/value`
+# and enable the UART if needed
+echo 1 > /sys/class/gpio/gpio24/value
+
+# Now reset the MCU and run pic32prog
+reset-mcu
+pic32prog -d /dev/ttyATH0 -b 115200 $1 $2 $3 $4 $5
+
+# Put the UART setting back to what it was:
+echo ${UART_SET} > /sys/class/gpio/gpio24/value
+
+# And finally return the login
+sed -e '/ttyATH0/ s/^#*//' -i /etc/inittab
+killall -HUP init
